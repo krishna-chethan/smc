@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SNA SPARSH Bill Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --primary-color: #1e3a8a;
+      --secondary-color: #0284c7;
+      --bg-color: #f8fafc;
+    }
+    body {
+      background-color: var(--bg-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .top-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: white;
+      padding: 0.85rem 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 1.25rem;
+    }
+    .card-header {
+      background-color: #f1f5f9;
+      font-weight: 600;
+      color: #1e293b;
+      border-top-left-radius: 9px !important;
+      border-top-right-radius: 9px !important;
+    }
+    .vendor-table th {
+      background-color: #f8fafc;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Printable Document Styling */
+    .preview-container {
+      background: #525659;
+      padding: 20px;
+      border-radius: 8px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .doc-page {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 20mm;
+      margin: 0 auto 25px auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      color: #000;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13pt;
+      line-height: 1.4;
+      position: relative;
+    }
+    .doc-header-title {
+      font-weight: bold;
+      text-align: center;
+      font-size: 14pt;
+      margin-bottom: 4px;
+    }
+    .doc-header-sub {
+      text-align: center;
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 15px;
+    }
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 11pt;
+    }
+    .doc-table th, .doc-table td {
+      border: 1px solid #000;
+      padding: 6px 8px;
+    }
+    .doc-table th {
+      background-color: #f3f4f6;
+      text-align: center;
+    }
+    .revenue-stamp-box {
+      border: 1px dashed #333;
+      width: 120px;
+      height: 90px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 9pt;
+      text-align: center;
+      padding: 5px;
+    }
+
+    /* Editable Page Styling */
+    .doc-page[contenteditable="true"] {
+      outline: 2px dashed #0284c7;
+      outline-offset: 4px;
+      cursor: text;
+    }
+    .doc-page[contenteditable="true"]:hover {
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Print media setup */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: transparent !important;
+        padding: 0 !important;
+      }
+      .doc-page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        outline: none !important;
+        page-break-after: always;
+        break-after: page;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="top-header no-print d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-file-earmark-spreadsheet-fill fs-2 text-info"></i>
+      <div>
+        <h5 class="mb-0 fw-bold">SNA SPARSH Bill Generator</h5>
+        <small class="text-white-50">Telangana Samagra Shiksha Automated Billing & Document System</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <button class="btn btn-outline-light btn-sm" onclick="exportDataJson()" title="Download filled form data as JSON file">
+        <i class="bi bi-filetype-json me-1"></i> Download JSON
+      </button>
+      <button class="btn btn-outline-light btn-sm" onclick="document.getElementById('importJsonInput').click()" title="Upload and load saved JSON file">
+        <i class="bi bi-upload me-1"></i> Load JSON
+      </button>
+      <button class="btn btn-outline-light btn-sm" onclick="loadSampleAtmakur()">
+        <i class="bi bi-box-arrow-in-down me-1"></i> Atmakur Sample
+      </button>
+      <button class="btn btn-outline-light btn-sm" onclick="loadSampleCharakonda()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Charakonda Sample
+      </button>
+      <button class="btn btn-warning btn-sm fw-bold" onclick="window.print()">
+        <i class="bi bi-printer-fill me-1"></i> Print / Save as PDF
+      </button>
+      <button class="btn btn-light btn-sm fw-bold text-primary" onclick="downloadDocx()">
+        <i class="bi bi-file-earmark-word-fill me-1"></i> Download Word (.docx)
+      </button>
+    </div>
+  </header>
+
+  <div class="container-fluid py-3">
+    <div class="row">
+      <!-- Left Column: Edit Details Form -->
+      <div class="col-lg-5 no-print" style="max-height: calc(100vh - 90px); overflow-y: auto;">
+        
+        <!-- Form Type & Data Backup / Restore -->
+        <div class="card bg-light border-primary mb-3 shadow-sm">
+          <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+              <span class="small fw-bold me-2"><i class="bi bi-ui-radios me-1"></i> Form Type:</span>
+              <div class="btn-group btn-group-sm" role="group">
+                <input type="radio" class="btn-check" name="institutionType" id="instTypeSchool" value="School" autocomplete="off" onchange="onInstitutionTypeChange()">
+                <label class="btn btn-outline-primary fw-semibold" for="instTypeSchool"><i class="bi bi-mortarboard me-1"></i> School</label>
+
+                <input type="radio" class="btn-check" name="institutionType" id="instTypeMrc" value="MRC" autocomplete="off" checked onchange="onInstitutionTypeChange()">
+                <label class="btn btn-outline-primary fw-semibold" for="instTypeMrc"><i class="bi bi-building-gear me-1"></i> MRC</label>
+              </div>
+            </div>
+
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-success btn-sm fw-bold" onclick="exportDataJson()" title="Download form backup as JSON">
+                <i class="bi bi-download me-1"></i> Download JSON
+              </button>
+              <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="document.getElementById('importJsonInput').click()" title="Restore form details from JSON">
+                <i class="bi bi-upload me-1"></i> Upload JSON
+              </button>
+              <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none" onchange="importDataJson(event)">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-building me-2"></i> Authority & Institution Details</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Proceedings Issued By</label>
+                <select id="procIssuedBy" class="form-select form-select-sm" onchange="onProcIssuedByChange()">
+                  <option value="MEO" selected>MEO</option>
+                  <option value="HEADMASTER">HEADMASTER</option>
+                  <option value="DDO">DDO</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Receipt Counter-Signature</label>
+                <select id="receiptSignBy" class="form-select form-select-sm" onchange="renderPreviewPages()">
+                  <option value="MEO" selected>MEO</option>
+                  <option value="HEADMASTER">HEADMASTER</option>
+                  <option value="DDO">DDO</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Mandal Name</label>
+                <input type="text" id="mandalName" class="form-control form-control-sm" value="ATMAKUR (M)" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">School / Office Name</label>
+                <input type="text" id="procIssuedSchoolName" class="form-control form-control-sm" value="Mandal Resource Centre, Atmakur (M)" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">DDO / Officer Name</label>
+                <input type="text" id="ddoName" class="form-control form-control-sm" value="P. Venkata Rami Reddy" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">DDO Qualification / Desig</label>
+                <input type="text" id="ddoQualification" class="form-control form-control-sm" value="M.E.O." oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">School Incharge / Chairperson</label>
+                <input type="text" id="schoolIncharge" class="form-control form-control-sm" value="MEO" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">UDISE Code</label>
+                <input type="text" id="udiseCode" class="form-control form-control-sm" value="36060401002" oninput="renderPreviewPages()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-file-text me-2"></i> Grant, Proceeding & Budget Details
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Proceeding No.</label>
+                <input type="text" id="prcNo" class="form-control form-control-sm" value="E/172/MRC/ATK/2026" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Proceeding Date</label>
+                <input type="text" id="proDate" class="form-control form-control-sm" value="07-09-2026" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Financial Year</label>
+                <input type="text" id="financialYear" class="form-control form-control-sm" value="2026-27" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6" id="resolutionDateFieldGroup">
+                <label class="form-label small fw-semibold">Resolution Date</label>
+                <input type="text" id="resolutionDate" class="form-control form-control-sm" value="05-09-2026" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-12">
+                <label class="form-label small fw-semibold">Purpose / Activity Name</label>
+                <input type="text" id="purpose" class="form-control form-control-sm" value="Maintenance Grant - First Instalment" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Budget Category</label>
+                <select id="budgetReleasedUnder" class="form-select form-select-sm" onchange="onBudgetChange()">
+                  <option value="General-72%">General (72%)</option>
+                  <option value="SC-17%" selected>SC (17%)</option>
+                  <option value="ST-11%">ST (11%)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Head of Account (HOA)</label>
+                <input type="text" id="hoa" class="form-control form-control-sm" value="2202-01-789-15-05-500-503" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Major Component</label>
+                <input type="text" id="majorComponent" class="form-control form-control-sm" value="MRC Grant (Maintenance C465)" oninput="renderPreviewPages()">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Sub Component</label>
+                <input type="text" id="subComponent" class="form-control form-control-sm" value="Mandal Resource Centre Maintenance" oninput="renderPreviewPages()">
+              </div>
+
+              <!-- References Section with Dynamic Add -->
+              <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label small fw-semibold mb-0">References</label>
+                  <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:0.75rem;" onclick="addReferenceRow()">
+                    <i class="bi bi-plus-circle me-1"></i> Add Reference
+                  </button>
+                </div>
+                <div id="referencesContainer">
+                  <!-- Injected via JavaScript -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Multi-Vendor Table -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-people me-2"></i> Vendor & Expenditure Items</span>
+            <button class="btn btn-primary btn-sm py-0 px-2" onclick="addVendorRow()">
+              <i class="bi bi-plus-circle me-1"></i> Add Row
+            </button>
+          </div>
+          <div class="card-body p-2">
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered vendor-table mb-2">
+                <thead>
+                  <tr>
+                    <th style="width: 22%;">Item / Purpose</th>
+                    <th style="width: 15%;">Amount (Rs.)</th>
+                    <th style="width: 20%;">Vendor / Name</th>
+                    <th style="width: 19%;">Bank Name</th>
+                    <th style="width: 20%;">A/C No & IFSC</th>
+                    <th style="width: 4%;"></th>
+                  </tr>
+                </thead>
+                <tbody id="vendorTableBody">
+                  <!-- Injected dynamically -->
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center px-1">
+              <span class="small fw-bold">Total Expenditure:</span>
+              <span class="fs-6 fw-bold text-success" id="totalAmountDisplay">Rs. 0.00</span>
+            </div>
+            <div class="small text-muted mt-1" id="totalWordsDisplay">Zero rupees only</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Live Document Preview -->
+      <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-center mb-2 no-print flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold text-secondary"><i class="bi bi-pencil-square text-primary me-1"></i> Interactive Document Canvas</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle d-none d-md-inline">
+              <i class="bi bi-cursor-text me-1"></i> Directly click & edit text on pages
+            </span>
+          </div>
+          
+          <div class="d-flex gap-2 align-items-center">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" id="previewFilter_all" class="btn btn-outline-secondary active" onclick="switchPreviewDoc('all')">All</button>
+              <button type="button" id="previewFilter_proc" class="btn btn-outline-secondary" onclick="switchPreviewDoc('proc')">Proceedings</button>
+              <button type="button" id="previewFilter_receipt" class="btn btn-outline-secondary" onclick="switchPreviewDoc('receipt')">Receipts</button>
+              <button type="button" id="previewFilterResBtn" class="btn btn-outline-secondary" onclick="switchPreviewDoc('resolution')">Resolution</button>
+              <button type="button" id="previewFilter_uc" class="btn btn-outline-secondary" onclick="switchPreviewDoc('uc')">UC</button>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" title="Re-sync from left form" onclick="renderPreviewPages()">
+              <i class="bi bi-arrow-clockwise"></i> Reset View
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-container" id="printArea">
+          <!-- Live Preview Pages Injected Here -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let institutionType = 'MRC'; // 'School' or 'MRC'
+    let references = [
+      "State Project Director, S.S., Hyderabad, Rc. No. 2191/MRC/CRCGrants/TSS/Plg/T7/2017-2, dated 02-08-2026."
+    ];
+
+    let vendors = [
+      {
+        description: "Payment of electricity charges",
+        amount: 5783,
+        vendorName: "P. Venkata Rami Reddy",
+        bankName: "State Bank of India",
+        accountNumber: "52169367846",
+        ifscCode: "SBIN0020135"
+      },
+      {
+        description: "Stationery",
+        amount: 7517,
+        vendorName: "M. Venkateswarlu",
+        bankName: "Canara Bank",
+        accountNumber: "1869101005591",
+        ifscCode: "CNRB0001869"
+      },
+      {
+        description: "Drinking water expenses",
+        amount: 2000,
+        vendorName: "T. Uday",
+        bankName: "Canara Bank",
+        accountNumber: "1869101012576",
+        ifscCode: "CNRB0001869"
+      }
+    ];
+
+    let currentPreviewFilter = 'all';
+
+    function onInstitutionTypeChange() {
+      const isMrc = document.getElementById("instTypeMrc").checked;
+      institutionType = isMrc ? 'MRC' : 'School';
+
+      const resFieldGroup = document.getElementById("resolutionDateFieldGroup");
+      const resFilterBtn = document.getElementById("previewFilterResBtn");
+
+      if (isMrc) {
+        if (resFieldGroup) resFieldGroup.style.display = "none";
+        if (resFilterBtn) resFilterBtn.style.display = "none";
+        if (currentPreviewFilter === 'resolution') {
+          switchPreviewDoc('all');
+        }
+      } else {
+        if (resFieldGroup) resFieldGroup.style.display = "block";
+        if (resFilterBtn) resFilterBtn.style.display = "inline-block";
+      }
+
+      renderPreviewPages();
+    }
+
+    function onProcIssuedByChange() {
+      const procBy = document.getElementById("procIssuedBy").value;
+      // sync receipt signer by default if desired
+      const receiptSign = document.getElementById("receiptSignBy");
+      if (receiptSign) {
+        receiptSign.value = procBy;
+      }
+      renderPreviewPages();
+    }
+
+    function renderReferenceRows() {
+      const container = document.getElementById("referencesContainer");
+      if (!container) return;
+      container.innerHTML = "";
+
+      references.forEach((refText, idx) => {
+        const div = document.createElement("div");
+        div.className = "input-group input-group-sm mb-1";
+        div.innerHTML = `
+          <span class="input-group-text fw-bold text-muted">${idx + 1}.</span>
+          <input type="text" class="form-control" value="${escapeHtml(refText)}" placeholder="Enter reference text..." oninput="updateReferenceField(${idx}, this.value)">
+          ${idx > 0 ? `<button class="btn btn-outline-danger" type="button" title="Remove reference" onclick="removeReferenceRow(${idx})"><i class="bi bi-x-lg"></i></button>` : ''}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addReferenceRow() {
+      references.push("");
+      renderReferenceRows();
+      renderPreviewPages();
+    }
+
+    function removeReferenceRow(idx) {
+      if (references.length > 1) {
+        references.splice(idx, 1);
+        renderReferenceRows();
+        renderPreviewPages();
+      }
+    }
+
+    function updateReferenceField(idx, val) {
+      references[idx] = val;
+      renderPreviewPages();
+    }
+
+    function renderVendorRows() {
+      const tbody = document.getElementById("vendorTableBody");
+      tbody.innerHTML = "";
+      vendors.forEach((v, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" class="form-control form-control-sm p-1" value="${escapeHtml(v.description)}" oninput="updateVendorField(${i}, 'description', this.value)"></td>
+          <td><input type="number" class="form-control form-control-sm p-1 text-end" value="${v.amount}" oninput="updateVendorField(${i}, 'amount', this.value)"></td>
+          <td><input type="text" class="form-control form-control-sm p-1" value="${escapeHtml(v.vendorName)}" oninput="updateVendorField(${i}, 'vendorName', this.value)"></td>
+          <td><input type="text" placeholder="Bank Name" class="form-control form-control-sm p-1" value="${escapeHtml(v.bankName || '')}" oninput="updateVendorField(${i}, 'bankName', this.value)"></td>
+          <td>
+            <input type="text" placeholder="A/C No" class="form-control form-control-sm p-1 mb-1" value="${escapeHtml(v.accountNumber)}" oninput="updateVendorField(${i}, 'accountNumber', this.value)">
+            <input type="text" placeholder="IFSC" class="form-control form-control-sm p-1" value="${escapeHtml(v.ifscCode)}" oninput="updateVendorField(${i}, 'ifscCode', this.value)">
+          </td>
+          <td class="text-center align-middle">
+            <button class="btn btn-outline-danger btn-sm p-0 px-1" title="Remove" onclick="removeVendorRow(${i})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      calculateTotals();
+    }
+
+    function addVendorRow() {
+      vendors.push({
+        description: document.getElementById("purpose").value || "Expenditure item",
+        amount: 0,
+        vendorName: "",
+        bankName: "",
+        accountNumber: "",
+        ifscCode: ""
+      });
+      renderVendorRows();
+    }
+
+    function removeVendorRow(i) {
+      if (vendors.length > 1) {
+        vendors.splice(i, 1);
+        renderVendorRows();
+      } else {
+        alert("At least one expenditure / vendor row is required.");
+      }
+    }
+
+    function updateVendorField(idx, field, val) {
+      vendors[idx][field] = (field === 'amount') ? (parseFloat(val) || 0) : val;
+      calculateTotals();
+    }
+
+    function calculateTotals() {
+      const total = vendors.reduce((sum, v) => sum + (parseFloat(v.amount) || 0), 0);
+      document.getElementById("totalAmountDisplay").innerText = "Rs. " + total.toLocaleString('en-IN', {minimumFractionDigits: 2});
+      
+      // Fetch words conversion from backend
+      fetch('/api/num_to_words', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ amount: total })
+      })
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById("totalWordsDisplay").innerText = d.words;
+        renderPreviewPages(d.words);
+      })
+      .catch(() => renderPreviewPages());
+    }
+
+    function onBudgetChange() {
+      const cat = document.getElementById("budgetReleasedUnder").value;
+      const hoaField = document.getElementById("hoa");
+      if (cat === "General-72%") {
+        hoaField.value = "2202-01-001-15-05-500-503";
+      } else if (cat === "SC-17%") {
+        hoaField.value = "2202-01-789-15-05-500-503";
+      } else if (cat === "ST-11%") {
+        hoaField.value = "2202-01-796-15-05-500-503";
+      }
+      renderPreviewPages();
+    }
+
+    function switchPreviewDoc(filter) {
+      currentPreviewFilter = filter;
+      document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`previewFilter_${filter}`) || event.target;
+      if (activeBtn) activeBtn.classList.add('active');
+      renderPreviewPages();
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function renderPreviewPages(wordsCached) {
+      const data = getFormData();
+      const preview = document.getElementById("printArea");
+      const words = wordsCached || document.getElementById("totalWordsDisplay").innerText;
+
+      let html = "";
+
+      // 1. PROCEEDINGS
+      if (currentPreviewFilter === 'all' || currentPreviewFilter === 'proc') {
+        let vRows = "";
+        vendors.forEach((v, idx) => {
+          vRows += `
+            <tr>
+              <td style="text-align:center;">${idx+1}</td>
+              <td>${escapeHtml(v.description)}</td>
+              <td style="text-align:right;">${parseFloat(v.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              <td>${escapeHtml(v.vendorName)}</td>
+              <td>${escapeHtml(v.bankName ? v.bankName + '<br>' : '')}${escapeHtml(v.accountNumber)}<br><small>IFSC: ${escapeHtml(v.ifscCode)}</small></td>
+            </tr>
+          `;
+        });
+
+        // References HTML
+        let refListHtml = "";
+        if (data.references && data.references.length > 0) {
+          refListHtml = data.references.map((r, i) => `${i + 1}. ${escapeHtml(r)}`).join('<br>');
+        } else {
+          refListHtml = "1. None";
+        }
+
+        html += `
+          <div class="doc-page" contenteditable="true" spellcheck="false" title="Click anywhere to edit directly on this page">
+            <div class="doc-header-title">PROCEEDINGS OF THE ${escapeHtml(data.procIssuedBy)}, ${escapeHtml(data.mandalName)}</div>
+            <div class="doc-header-sub">Present: ${escapeHtml(data.ddoName)}, ${escapeHtml(data.ddoQualification)}</div>
+            
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:12px;">
+              <span>Proceedings No. ${escapeHtml(data.prcNo)}</span>
+              <span>Date: ${escapeHtml(data.proDate)}</span>
+            </div>
+
+            <p><strong>Sub:</strong> ${escapeHtml(data.procIssuedSchoolName)} – Financial Year ${escapeHtml(data.financialYear)} – Release of funds for expenditure incurred towards ${escapeHtml(data.purpose)} under ${escapeHtml(data.budgetReleasedUnder)} – Orders Issued – Reg.</p>
+            <p><strong>Ref:</strong> ${refListHtml}</p>
+            
+            <div style="text-align:center; font-weight:bold; margin: 8px 0;">***</div>
+            <div style="text-align:center; font-weight:bold; font-size:13pt; margin-bottom:8px;">ORDER</div>
+
+            <p style="text-align:justify;">
+              With reference to the subject and references cited above, sanction is hereby accorded permitting expenditure from the sanctioned funds of 
+              <strong>Rs.${data.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}/- (${words})</strong> towards 
+              ${escapeHtml(data.purpose)} of ${escapeHtml(data.procIssuedSchoolName)}, for payment of expenses incurred.
+            </p>
+
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width:8%;">S.No.</th>
+                  <th style="width:32%;">Description</th>
+                  <th style="width:17%;">Amount (Rs.)</th>
+                  <th style="width:21%;">Account holder's name</th>
+                  <th style="width:22%;">Bank, Account & IFSC</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${vRows}
+                <tr style="font-weight:bold; background:#fafafa;">
+                  <td colspan="2" style="text-align:center;">TOTAL</td>
+                  <td style="text-align:right;">Rs. ${data.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p style="margin-top:10px;"><strong>Head of Account (HOA):</strong> ${escapeHtml(data.hoa)}</p>
+            <p style="font-size:10.5pt;">The Sub-Treasury Officer / PAO is requested to honour the bill and credit the amount directly to the respective bank accounts.</p>
+
+            <div style="margin-top:40px; text-align:right; font-weight:bold;">
+              Signature of the ${escapeHtml(data.procIssuedBy)}<br>
+              ${escapeHtml(data.procIssuedSchoolName)}
+            </div>
+
+            <div style="margin-top:30px; font-size:10pt;">
+              <strong>Copies to:</strong><br>
+              1. The District Educational Officer & Accounts Officer.<br>
+              2. Sub-Treasury Officer / PAO concerned.<br>
+              3. Office copy.
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. ADVANCE STAMPED RECEIPTS
+      if (currentPreviewFilter === 'all' || currentPreviewFilter === 'receipt') {
+        vendors.forEach((v, idx) => {
+          html += `
+            <div class="doc-page" contenteditable="true" spellcheck="false" title="Click anywhere to edit directly on this page">
+              <div class="doc-header-title">ADVANCE STAMPED RECEIPT</div>
+              <div style="text-align:right; font-weight:bold; margin-bottom:15px;">Date: ${escapeHtml(data.proDate)}</div>
+
+              <p style="text-align:justify;">
+                Received with thanks from the Office of <strong>${escapeHtml(data.procIssuedSchoolName)}, Mdl: ${escapeHtml(data.mandalName)}</strong>, 
+                the sum of <strong>Rs.${parseFloat(v.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}/-</strong> 
+                towards full and final settlement against Credit Bill / Invoice for providing goods or services rendered towards 
+                <strong>'${escapeHtml(v.description)}'</strong>.
+              </p>
+
+              <p>The payment is acknowledged through online e-payment transfer/online treasury clearance system directly into our bank account as per the authorization details provided below:</p>
+
+              <div style="background:#f9fafb; border:1px solid #ddd; padding:12px; margin: 15px 0;">
+                <div style="font-weight:bold; margin-bottom:8px;">VENDOR BANK DETAILS FOR E-PAYMENT:</div>
+                <div>1. Name of Beneficiary/Vendor: <strong>${escapeHtml(v.vendorName)}</strong></div>
+                <div>2. Bank Account Number: <strong>${escapeHtml(v.accountNumber)}</strong></div>
+                <div>3. Bank Name & Branch: <strong>${escapeHtml(v.bankName || 'State Bank of India')}</strong></div>
+                <div>4. IFSC Code: <strong>${escapeHtml(v.ifscCode)}</strong></div>
+                <div>5. GSTIN (if applicable): <strong>N/A</strong></div>
+              </div>
+
+              <!-- Vendor Stamp & Signature Area (blank space above signature line for stamp/sign) -->
+              <div style="display:flex; justify-content:flex-end; margin-top:55px;">
+                <div style="text-align:right; min-width:260px;">
+                  <div style="height:45px;"></div>
+                  <div>Signature of Vendor: _____________________</div>
+                  <div style="margin-top:4px;">Name: <strong>${escapeHtml(v.vendorName)}</strong></div>
+                </div>
+              </div>
+
+              <hr style="margin: 35px 0 20px 0; border-top: 1px dashed #666;">
+
+              <div class="doc-header-title" style="font-size:12pt;">COUNTER SIGNATURE OF ${escapeHtml(data.receiptSignBy)}</div>
+              <p style="text-align:justify; font-size:11pt;">
+                Certified that the services/materials mentioned above have been received in good condition, entered in the Stock Register and found correct. The payment may be sanctioned and disbursed online directly to the vendor's bank account.
+              </p>
+
+              <div style="display:flex; justify-content:space-between; margin-top:35px; font-weight:bold; font-size:11pt;">
+                <div>
+                  Date: ${escapeHtml(data.proDate)}<br>
+                  Place: ${escapeHtml(data.mandalName)}<br>
+                  UDISE Code: ${escapeHtml(data.udiseCode)}
+                </div>
+                <div style="text-align:right;">
+                  Signature of ${escapeHtml(data.receiptSignBy)}<br>
+                  with Office Seal
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      // 3. COMMITTEE RESOLUTION (School mode only)
+      if (institutionType === 'School' && (currentPreviewFilter === 'all' || currentPreviewFilter === 'resolution')) {
+        html += `
+          <div class="doc-page" contenteditable="true" spellcheck="false" title="Click anywhere to edit directly on this page">
+            <div class="doc-header-title">EXECUTIVE RESOLUTION – ${escapeHtml(data.purpose.toUpperCase())}</div>
+            <div class="doc-header-sub">${escapeHtml(data.procIssuedSchoolName)}, Mdl: ${escapeHtml(data.mandalName)} | UDISE: ${escapeHtml(data.udiseCode)}</div>
+            <div style="text-align:right; font-weight:bold; margin-bottom:15px;">Date: ${escapeHtml(data.resolutionDate)}</div>
+
+            <p style="text-align:justify;">
+              The School Management Committee / AAPC Chairperson, <strong>${escapeHtml(data.schoolIncharge)}</strong> and staff of 
+              <strong>${escapeHtml(data.procIssuedSchoolName)}, Mdl: ${escapeHtml(data.mandalName)}</strong> unanimously resolved to utilize the grant 
+              of <strong>Rs.${data.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}/- (${words})</strong> 
+              received under SNA SPARSH for FY ${escapeHtml(data.financialYear)}, strictly as per Government guidelines.
+            </p>
+
+            <p style="text-align:justify;">
+              Out of the sanctioned amount, <strong>Rs.${data.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}/-</strong> 
+              shall be paid directly to the concerned vendor(s) through the IFMIS Portal under SNA SPARSH norms. 
+              The Verification Committee has verified the bills, invoices, and completed works/purchased items and recommended the final sanction.
+            </p>
+
+            <p>It is resolved that the grant shall be utilized solely for approved institutional requirements and scheme objectives.</p>
+
+            <div style="font-weight:bold; margin-top:30px; margin-bottom:10px;">Staff / Committee Members Present:</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:11pt;">
+              <div>1. _____________________________</div>
+              <div>5. _____________________________</div>
+              <div>2. _____________________________</div>
+              <div>6. _____________________________</div>
+              <div>3. _____________________________</div>
+              <div>7. _____________________________</div>
+              <div>4. _____________________________</div>
+              <div>8. _____________________________</div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:60px; font-weight:bold;">
+              <div>Signature of AAPC / SMC Chairperson</div>
+              <div>Signature of ${escapeHtml(data.procIssuedBy)}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 4. UTILIZATION CERTIFICATE
+      if (currentPreviewFilter === 'all' || currentPreviewFilter === 'uc') {
+        html += `
+          <div class="doc-page" contenteditable="true" spellcheck="false" title="Click anywhere to edit directly on this page">
+            <div class="doc-header-title">UTILIZATION CERTIFICATE</div>
+            <div class="doc-header-sub">FOR THE FINANCIAL YEAR ${escapeHtml(data.financialYear)}</div>
+            <div class="doc-header-sub" style="font-size:11pt; margin-top:-8px;">UNDER SNA SPARSH ACCOUNT – ${escapeHtml(data.purpose.toUpperCase())}</div>
+            <div style="text-align:center; font-weight:bold; margin-bottom:20px;">${escapeHtml(data.procIssuedSchoolName)}, Mdl: ${escapeHtml(data.mandalName)} (UDISE: ${escapeHtml(data.udiseCode)})</div>
+
+            <p style="text-align:justify;">
+              Certified that a sum of <strong>Rs.${data.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}/- (${words})</strong> 
+              was received under SNA SPARSH Account during the financial year ${escapeHtml(data.financialYear)} towards the activity of <strong>${escapeHtml(data.purpose)}</strong>.
+            </p>
+
+            <p style="text-align:justify;">
+              Out of this, an amount of <strong>Rs.${data.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}/- (${words})</strong> 
+              has been utilized for the purposes for which it was sanctioned, as detailed category-wise. 
+              The unspent balance of <strong>Rs. 0.00/-</strong> remains as on ${escapeHtml(data.proDate)}.
+            </p>
+
+            <p style="text-align:justify; margin-top:20px;">
+              Certified that I have satisfied myself that the conditions on which the grant was sanctioned have been duly fulfilled and that I have exercised the following checks to see that the money was actually utilized for the purpose for which it was sanctioned:
+            </p>
+            <ol style="font-size:11pt;">
+              <li>Scrutiny of Original Vouchers and Cash Book entries.</li>
+              <li>Verification of Stock and Issue Registers.</li>
+              <li>Verification of work completion / supplies received by the Committee.</li>
+            </ol>
+
+            <div style="display:flex; justify-content:space-between; margin-top:60px; font-weight:bold;">
+              <div>
+                Date: ${escapeHtml(data.proDate)}<br>
+                Place: ${escapeHtml(data.mandalName)}
+              </div>
+              <div style="text-align:right;">
+                Signature of ${escapeHtml(data.procIssuedBy)}<br>
+                with Office Seal
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      preview.innerHTML = html;
+    }
+
+    function getFormData() {
+      const tot = vendors.reduce((s, v) => s + (parseFloat(v.amount) || 0), 0);
+      return {
+        institutionType: institutionType,
+        procIssuedBy: document.getElementById("procIssuedBy").value,
+        receiptSignBy: document.getElementById("receiptSignBy").value,
+        mandalName: document.getElementById("mandalName").value,
+        procIssuedSchoolName: document.getElementById("procIssuedSchoolName").value,
+        ddoName: document.getElementById("ddoName").value,
+        ddoQualification: document.getElementById("ddoQualification").value,
+        schoolIncharge: document.getElementById("schoolIncharge").value,
+        udiseCode: document.getElementById("udiseCode").value,
+        prcNo: document.getElementById("prcNo").value,
+        proDate: document.getElementById("proDate").value,
+        financialYear: document.getElementById("financialYear").value,
+        resolutionDate: document.getElementById("resolutionDate").value,
+        purpose: document.getElementById("purpose").value,
+        budgetReleasedUnder: document.getElementById("budgetReleasedUnder").value,
+        hoa: document.getElementById("hoa").value,
+        majorComponent: document.getElementById("majorComponent").value,
+        subComponent: document.getElementById("subComponent").value,
+        references: references.filter(r => r && r.trim() !== ""),
+        vendors: vendors,
+        totalAmount: tot
+      };
+    }
+
+    // JSON Export & Import Functions
+    function exportDataJson() {
+      const data = getFormData();
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const cleanPrc = (data.prcNo || "Form_Data").replace(/[\/\\]/g, "_");
+      a.href = url;
+      a.download = `SPARSH_Data_${cleanPrc}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importDataJson(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+
+          if (imported.institutionType) {
+            institutionType = imported.institutionType;
+            if (institutionType === 'School') {
+              document.getElementById("instTypeSchool").checked = true;
+            } else {
+              document.getElementById("instTypeMrc").checked = true;
+            }
+          }
+
+          if (imported.procIssuedBy) document.getElementById("procIssuedBy").value = imported.procIssuedBy;
+          if (imported.receiptSignBy) document.getElementById("receiptSignBy").value = imported.receiptSignBy;
+          if (imported.mandalName) document.getElementById("mandalName").value = imported.mandalName;
+          if (imported.procIssuedSchoolName) document.getElementById("procIssuedSchoolName").value = imported.procIssuedSchoolName;
+          if (imported.ddoName) document.getElementById("ddoName").value = imported.ddoName;
+          if (imported.ddoQualification) document.getElementById("ddoQualification").value = imported.ddoQualification;
+          if (imported.schoolIncharge) document.getElementById("schoolIncharge").value = imported.schoolIncharge;
+          if (imported.udiseCode) document.getElementById("udiseCode").value = imported.udiseCode;
+          if (imported.prcNo) document.getElementById("prcNo").value = imported.prcNo;
+          if (imported.proDate) document.getElementById("proDate").value = imported.proDate;
+          if (imported.financialYear) document.getElementById("financialYear").value = imported.financialYear;
+          if (imported.resolutionDate) document.getElementById("resolutionDate").value = imported.resolutionDate;
+          if (imported.purpose) document.getElementById("purpose").value = imported.purpose;
+          if (imported.budgetReleasedUnder) document.getElementById("budgetReleasedUnder").value = imported.budgetReleasedUnder;
+          if (imported.hoa) document.getElementById("hoa").value = imported.hoa;
+          if (imported.majorComponent) document.getElementById("majorComponent").value = imported.majorComponent;
+          if (imported.subComponent) document.getElementById("subComponent").value = imported.subComponent;
+
+          if (Array.isArray(imported.references) && imported.references.length > 0) {
+            references = imported.references;
+          } else if (imported.spdLetterNo) {
+            references = [imported.spdLetterNo];
+          }
+          renderReferenceRows();
+
+          if (Array.isArray(imported.vendors) && imported.vendors.length > 0) {
+            vendors = imported.vendors;
+          }
+          renderVendorRows();
+
+          onInstitutionTypeChange();
+          alert("Data imported successfully!");
+        } catch (err) {
+          alert("Invalid JSON file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ""; // reset input so same file can be selected again
+    }
+
+    function downloadDocx() {
+      const payload = getFormData();
+      fetch('/api/generate_docx', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("Error generating DOCX");
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SPARSH_Bill_${payload.prcNo.replace(/[\/\\]/g, '_')}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      })
+      .catch(err => alert("Failed to download DOCX: " + err));
+    }
+
+    function loadSampleAtmakur() {
+      document.getElementById("instTypeMrc").checked = true;
+      institutionType = "MRC";
+      document.getElementById("procIssuedBy").value = "MEO";
+      document.getElementById("receiptSignBy").value = "MEO";
+      document.getElementById("mandalName").value = "ATMAKUR (M)";
+      document.getElementById("procIssuedSchoolName").value = "Mandal Resource Centre, Atmakur (M)";
+      document.getElementById("ddoName").value = "P. Venkata Rami Reddy";
+      document.getElementById("ddoQualification").value = "M.E.O.";
+      document.getElementById("schoolIncharge").value = "MEO";
+      document.getElementById("udiseCode").value = "36060401002";
+      document.getElementById("prcNo").value = "E/172/MRC/ATK/2026";
+      document.getElementById("proDate").value = "07-09-2026";
+      document.getElementById("financialYear").value = "2026-27";
+      document.getElementById("purpose").value = "Maintenance Grant - First Instalment";
+      document.getElementById("budgetReleasedUnder").value = "SC-17%";
+      document.getElementById("hoa").value = "2202-01-789-15-05-500-503";
+      document.getElementById("majorComponent").value = "MRC Grant (Maintenance C465)";
+      document.getElementById("subComponent").value = "Mandal Resource Centre Maintenance";
+      
+      references = [
+        "State Project Director, S.S., Hyderabad, Rc. No. 2191/MRC/CRCGrants/TSS/Plg/T7/2017-2, dated 02-08-2026."
+      ];
+      renderReferenceRows();
+
+      vendors = [
+        {
+          description: "Payment of electricity charges",
+          amount: 5783,
+          vendorName: "P. Venkata Rami Reddy",
+          bankName: "State Bank of India",
+          accountNumber: "52169367846",
+          ifscCode: "SBIN0020135"
+        },
+        {
+          description: "Stationery",
+          amount: 7517,
+          vendorName: "M. Venkateswarlu",
+          bankName: "Canara Bank",
+          accountNumber: "1869101005591",
+          ifscCode: "CNRB0001869"
+        },
+        {
+          description: "Drinking water expenses",
+          amount: 2000,
+          vendorName: "T. Uday",
+          bankName: "Canara Bank",
+          accountNumber: "1869101012576",
+          ifscCode: "CNRB0001869"
+        }
+      ];
+      renderVendorRows();
+      onInstitutionTypeChange();
+    }
+
+    function loadSampleCharakonda() {
+      document.getElementById("instTypeSchool").checked = true;
+      institutionType = "School";
+      document.getElementById("procIssuedBy").value = "HEADMASTER";
+      document.getElementById("receiptSignBy").value = "HEADMASTER";
+      document.getElementById("mandalName").value = "CHARAKONDA";
+      document.getElementById("procIssuedSchoolName").value = "MPUPS Kandlapally";
+      document.getElementById("ddoName").value = "R JHANSI RANI";
+      document.getElementById("ddoQualification").value = "M.A.,B.Ed.";
+      document.getElementById("schoolIncharge").value = "Headmaster / SMC Chairperson";
+      document.getElementById("udiseCode").value = "36060401003";
+      document.getElementById("prcNo").value = "01/SNA/2026";
+      document.getElementById("proDate").value = "16/10/2026";
+      document.getElementById("financialYear").value = "2026-27";
+      document.getElementById("purpose").value = "Supply of Student ID Cards";
+      document.getElementById("budgetReleasedUnder").value = "SC-17%";
+      document.getElementById("hoa").value = "2202-01-789-15-05-500-503";
+      document.getElementById("majorComponent").value = "Curriculum,Pedagogy and Assessment for Supply of Student ID Cards";
+      document.getElementById("subComponent").value = "Project Innovation";
+      
+      references = [
+        "State project Director, SS, TG, Hyderabad Circular Memo No. 994769(3981)/pmshri/t6/pdg/2026-2.,Dt:27.08.2026"
+      ];
+      renderReferenceRows();
+
+      vendors = [
+        {
+          description: "Supply of Student ID Cards",
+          amount: 17220,
+          vendorName: "venu",
+          bankName: "State Bank of India",
+          accountNumber: "123",
+          ifscCode: "SBIN0020135"
+        }
+      ];
+      renderVendorRows();
+      onInstitutionTypeChange();
+    }
+
+    // Initialize on load
+    window.onload = function() {
+      renderReferenceRows();
+      renderVendorRows();
+      onInstitutionTypeChange();
+    };
+  </script>
+</body>
+</html>
